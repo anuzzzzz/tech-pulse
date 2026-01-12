@@ -58,7 +58,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
 export async function ingestLatestNews() {
   console.log("🔍 Fetching top stories from Hacker News...");
 
-  const storyIds = await fetchTopStoryIds(5);
+  const storyIds = await fetchTopStoryIds(20);
   let newCount = 0;
   let skippedCount = 0;
 

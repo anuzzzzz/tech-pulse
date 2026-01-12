@@ -10,12 +10,15 @@ import { SubscribeForm } from "@/components/SubscribeForm";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  searchParams: Promise<{ category?: string; sentiment?: string }>;
+  searchParams: Promise<{ category?: string; sentiment?: string; page?: string }>;
 }
+
+const ITEMS_PER_PAGE = 10;
 
 export default async function Home({ searchParams }: PageProps) {
   const params = await searchParams;
-  const { category, sentiment } = params;
+  const { category, sentiment, page } = params;
+  const currentPage = Math.max(1, parseInt(page || "1", 10));
 
   // Build filter conditions
   const conditions: SQL[] = [];
@@ -33,11 +36,17 @@ export default async function Home({ searchParams }: PageProps) {
     conditions.push(lte(newsItems.sentimentScore, 3));
   }
 
-  const news = await db
+  // Get total count for pagination
+  const allNews = await db
     .select()
     .from(newsItems)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(newsItems.createdAt));
+
+  const totalItems = allNews.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+  const news = allNews.slice(offset, offset + ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -47,11 +56,11 @@ export default async function Home({ searchParams }: PageProps) {
         {/* Stats Bar */}
         <div className="flex items-center gap-6 mb-6 text-sm font-mono-display text-zinc-500">
           <span>
-            <span className="text-green-500">{news.length}</span> stories
+            <span className="text-green-500">{totalItems}</span> stories
             {(category || sentiment) && " (filtered)"}
           </span>
           <span>
-            Last updated: {new Date().toLocaleTimeString()}
+            Page {currentPage} of {totalPages}
           </span>
         </div>
 
@@ -70,6 +79,61 @@ export default async function Home({ searchParams }: PageProps) {
             {news.map((item) => (
               <NewsCard key={item.id} item={item} />
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <a
+              href={`?${new URLSearchParams({
+                ...(category && { category }),
+                ...(sentiment && { sentiment }),
+                page: String(Math.max(1, currentPage - 1)),
+              }).toString()}`}
+              className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                currentPage === 1
+                  ? "border-zinc-800 text-zinc-600 pointer-events-none"
+                  : "border-zinc-700 text-zinc-300 hover:border-green-500/50 hover:bg-green-500/10"
+              }`}
+            >
+              Previous
+            </a>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <a
+                  key={pageNum}
+                  href={`?${new URLSearchParams({
+                    ...(category && { category }),
+                    ...(sentiment && { sentiment }),
+                    page: String(pageNum),
+                  }).toString()}`}
+                  className={`w-10 h-10 flex items-center justify-center text-sm rounded-lg border transition-colors ${
+                    pageNum === currentPage
+                      ? "border-green-500 bg-green-500/20 text-green-500"
+                      : "border-zinc-700 text-zinc-400 hover:border-green-500/50 hover:bg-green-500/10"
+                  }`}
+                >
+                  {pageNum}
+                </a>
+              ))}
+            </div>
+
+            <a
+              href={`?${new URLSearchParams({
+                ...(category && { category }),
+                ...(sentiment && { sentiment }),
+                page: String(Math.min(totalPages, currentPage + 1)),
+              }).toString()}`}
+              className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                currentPage === totalPages
+                  ? "border-zinc-800 text-zinc-600 pointer-events-none"
+                  : "border-zinc-700 text-zinc-300 hover:border-green-500/50 hover:bg-green-500/10"
+              }`}
+            >
+              Next
+            </a>
           </div>
         )}
       </main>

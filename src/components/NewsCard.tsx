@@ -1,0 +1,89 @@
+import { ExternalLink, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { NewsItem } from "@/db/schema";
+
+interface NewsCardProps {
+  item: NewsItem;
+}
+
+export function NewsCard({ item }: NewsCardProps) {
+  const sentiment = item.sentimentScore ?? 5;
+
+  const getGlowClass = () => {
+    if (sentiment >= 8) return "glow-green border-green-500/50";
+    if (sentiment <= 3) return "glow-red border-red-500/50";
+    return "border-zinc-700";
+  };
+
+  const getSentimentIcon = () => {
+    if (sentiment >= 7) return <TrendingUp className="w-4 h-4 text-green-500" />;
+    if (sentiment <= 3) return <TrendingDown className="w-4 h-4 text-red-500" />;
+    return <Minus className="w-4 h-4 text-zinc-500" />;
+  };
+
+  const getSentimentColor = () => {
+    if (sentiment >= 7) return "text-green-500";
+    if (sentiment <= 3) return "text-red-500";
+    return "text-zinc-400";
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return "Unknown";
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(date));
+  };
+
+  return (
+    <article
+      className={`
+        bg-zinc-900/80 backdrop-blur border rounded-lg p-5
+        transition-all duration-300 hover:bg-zinc-800/80
+        ${getGlowClass()}
+      `}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 mb-3">
+        <h2 className="font-semibold text-zinc-100 leading-tight">
+          {item.title}
+        </h2>
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-shrink-0 p-2 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors"
+        >
+          <ExternalLink className="w-4 h-4 text-zinc-400" />
+        </a>
+      </div>
+
+      {/* Summary */}
+      <p className="text-zinc-400 text-sm mb-4 leading-relaxed">
+        {item.summary}
+      </p>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between text-xs font-mono-display">
+        <div className="flex items-center gap-4">
+          {/* Category */}
+          <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-300">
+            {item.category ?? "Other"}
+          </span>
+
+          {/* Sentiment */}
+          <div className={`flex items-center gap-1 ${getSentimentColor()}`}>
+            {getSentimentIcon()}
+            <span>{sentiment}/10</span>
+          </div>
+        </div>
+
+        {/* Date */}
+        <time className="text-zinc-500">
+          {formatDate(item.publishedAt)}
+        </time>
+      </div>
+    </article>
+  );
+}

@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TechPulse 🚀
 
-## Getting Started
+AI-powered tech news aggregator that summarizes the hottest stories from Hacker News.
 
-First, run the development server:
+## Tech Stack
 
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS v4
+- **Database:** Supabase (PostgreSQL)
+- **ORM:** Drizzle
+- **AI:** OpenAI GPT-4o-mini via Vercel AI SDK
+
+## Architecture
+
+**Proactive fetching pattern:**
+1. News is fetched from Hacker News API
+2. Each story is summarized by GPT-4o-mini
+3. Sentiment score (1-10) and category are extracted
+4. Data is stored in Supabase for instant retrieval
+5. UI reads from database — no user-facing latency
+
+## Setup
+
+### 1. Clone & Install
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone
+cd techpulse
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create `.env.local`:
+```env
+DATABASE_URL="your-supabase-connection-string"
+OPENAI_API_KEY="sk-your-openai-key"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Database Setup
+```bash
+npx drizzle-kit push
+```
 
-## Learn More
+### 4. Run Locally
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## AI Tools Used
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Claude (Anthropic):** Architecture design, code generation, debugging
+- **GPT-4o-mini (OpenAI):** Real-time news summarization and sentiment analysis
 
-## Deploy on Vercel
+## What I'd Build Next
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Cron job for automatic hourly updates (Vercel Cron)
+- "Chat with this article" feature using Vercel AI SDK
+- Filtering by category and sentiment
+- Email digest subscription
+- Semantic search using pgvector
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Tradeoffs
+
+- **GPT-4o-mini vs GPT-4o:** Chose mini for speed and cost; summaries are still high quality
+- **Server Actions vs API routes:** Simpler architecture, fewer files to manage
+- **Supabase vs raw Postgres:** Faster setup, built-in connection pooling
+
+## License
+
+MIT

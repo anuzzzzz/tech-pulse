@@ -1,11 +1,16 @@
-import { ExternalLink, TrendingUp, TrendingDown, Minus } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ExternalLink, TrendingUp, TrendingDown, Minus, MessageSquare } from "lucide-react";
 import { NewsItem } from "@/db/schema";
+import { ChatModal } from "./ChatModal";
 
 interface NewsCardProps {
   item: NewsItem;
 }
 
 export function NewsCard({ item }: NewsCardProps) {
+  const [showChat, setShowChat] = useState(false);
   const sentiment = item.sentimentScore ?? 5;
 
   const getGlowClass = () => {
@@ -37,53 +42,62 @@ export function NewsCard({ item }: NewsCardProps) {
   };
 
   return (
-    <article
-      className={`
-        bg-zinc-900/80 backdrop-blur border rounded-lg p-5
-        transition-all duration-300 hover:bg-zinc-800/80
-        ${getGlowClass()}
-      `}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-3">
-        <h2 className="font-semibold text-zinc-100 leading-tight">
-          {item.title}
-        </h2>
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-shrink-0 p-2 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors"
-        >
-          <ExternalLink className="w-4 h-4 text-zinc-400" />
-        </a>
-      </div>
-
-      {/* Summary */}
-      <p className="text-zinc-400 text-sm mb-4 leading-relaxed">
-        {item.summary}
-      </p>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between text-xs font-mono-display">
-        <div className="flex items-center gap-4">
-          {/* Category */}
-          <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-300">
-            {item.category ?? "Other"}
-          </span>
-
-          {/* Sentiment */}
-          <div className={`flex items-center gap-1 ${getSentimentColor()}`}>
-            {getSentimentIcon()}
-            <span>{sentiment}/10</span>
+    <>
+      <article
+        className={`
+          bg-zinc-900/80 backdrop-blur border rounded-lg p-5
+          transition-all duration-300 hover:bg-zinc-800/80
+          ${getGlowClass()}
+        `}
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <h2 className="font-semibold text-zinc-100 leading-tight">
+            {item.title}
+          </h2>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowChat(true)}
+              className="p-2 rounded-md bg-zinc-800 hover:bg-green-600 transition-colors group"
+              title="Chat with this article"
+            >
+              <MessageSquare className="w-4 h-4 text-zinc-400 group-hover:text-white" />
+            </button>
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors"
+            >
+              <ExternalLink className="w-4 h-4 text-zinc-400" />
+            </a>
           </div>
         </div>
 
-        {/* Date */}
-        <time className="text-zinc-500">
-          {formatDate(item.publishedAt)}
-        </time>
-      </div>
-    </article>
+        {/* Summary */}
+        <p className="text-zinc-400 text-sm mb-4 leading-relaxed">
+          {item.summary}
+        </p>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between text-xs font-mono-display">
+          <div className="flex items-center gap-4">
+            <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-300">
+              {item.category ?? "Other"}
+            </span>
+            <div className={`flex items-center gap-1 ${getSentimentColor()}`}>
+              {getSentimentIcon()}
+              <span>{sentiment}/10</span>
+            </div>
+          </div>
+          <time className="text-zinc-500">
+            {formatDate(item.publishedAt)}
+          </time>
+        </div>
+      </article>
+
+      {/* Chat Modal */}
+      {showChat && <ChatModal article={item} onClose={() => setShowChat(false)} />}
+    </>
   );
 }

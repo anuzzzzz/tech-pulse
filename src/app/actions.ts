@@ -54,7 +54,7 @@ export async function semanticSearch(query: string) {
       LIMIT 5
     `);
 
-    return results;
+    return results as unknown as Record<string, unknown>[];
   } catch (error) {
     console.error("Semantic search error:", error);
     return [];

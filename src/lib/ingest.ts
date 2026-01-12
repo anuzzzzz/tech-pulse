@@ -1,4 +1,4 @@
-import { generateObject } from "ai";
+import { generateObject, embed } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { db } from "@/db";
@@ -47,6 +47,14 @@ Provide a concise 2-sentence summary, a sentiment score (1-10), and categorize i
   return object;
 }
 
+async function generateEmbedding(text: string): Promise<number[]> {
+  const { embedding } = await embed({
+    model: openai.embedding("text-embedding-3-small"),
+    value: text,
+  });
+  return embedding;
+}
+
 export async function ingestLatestNews() {
   console.log("🔍 Fetching top stories from Hacker News...");
 
@@ -63,7 +71,6 @@ export async function ingestLatestNews() {
       continue;
     }
 
-    // Check if already exists
     const existing = await db.query.newsItems.findFirst({
       where: eq(newsItems.url, story.url),
     });
@@ -79,6 +86,11 @@ export async function ingestLatestNews() {
     try {
       const analysis = await summarizeStory(story.title, story.url);
 
+      // Generate embedding for semantic search
+      console.log(`🧠 Generating embedding...`);
+      const embeddingText = `${story.title} ${analysis.summary}`;
+      const embedding = await generateEmbedding(embeddingText);
+
       await db.insert(newsItems).values({
         title: story.title,
         url: story.url,
@@ -86,6 +98,7 @@ export async function ingestLatestNews() {
         sentimentScore: analysis.sentimentScore,
         category: analysis.category,
         publishedAt: new Date(story.time * 1000),
+        embedding,
       });
 
       console.log(`✅ Added: ${story.title.slice(0, 50)}...`);

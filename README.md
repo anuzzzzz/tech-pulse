@@ -4,6 +4,8 @@ A tech news aggregator that pulls top stories from Hacker News and uses AI to ge
 
 **Live demo:** https://techpulse-kohl.vercel.app
 
+![TechPulse Screenshot](screenshot.png)
+
 ---
 
 ## Running Locally
@@ -43,6 +45,25 @@ And enable the vector extension in Supabase SQL editor:
 create extension if not exists vector;
 ```
 
+## Running Tests
+
+```bash
+npx tsx src/lib/test-all-features.ts
+```
+
+This runs through database connections, API integrations, and core features.
+
+---
+
+## What I Built
+
+- **AI summaries** - Each article gets a 2-sentence summary, sentiment score (1-10), and category via GPT-4o-mini
+- **Semantic search** - Search by meaning using pgvector embeddings ("AI safety articles" actually works)
+- **Chat with articles** - Click any article to ask follow-up questions, streams responses
+- **Filtering** - Filter by category (AI, Security, Web, etc.) and sentiment (positive/neutral/negative)
+- **Email subscription** - Collects emails for future digest feature
+- **Auto-refresh** - Daily cron job fetches new stories (Vercel free tier limit)
+
 ---
 
 ## Approach
@@ -55,7 +76,7 @@ The flow:
 3. Everything gets stored in Postgres
 4. Frontend just reads from the database - no waiting
 
-I also added semantic search using pgvector. Each article gets an embedding, so you can search by meaning ("articles about AI safety") rather than exact keywords.
+I also added semantic search using pgvector. Each article gets an embedding, so you can search by meaning rather than exact keywords.
 
 ## Tradeoffs
 
@@ -71,27 +92,24 @@ I also added semantic search using pgvector. Each article gets an embedding, so 
 
 ## AI Tools Used
 
-**Claude (Anthropic)** - I used Claude throughout development for architecture decisions, debugging database connection issues, and generating boilerplate code. Specifically helped me figure out the Supabase pooler connection string format and Tailwind v4 syntax changes.
+**Gemini & Claude Opus** - Used both for initial tech stack planning and architecture decisions. Compared different approaches (separate backend vs Next.js Server Actions, various database options, embedding strategies) and finalized the stack based on their recommendations.
 
-**GPT-4o-mini (OpenAI)** - Powers the actual product. Each article gets sent to GPT-4o-mini with a prompt asking for a summary, sentiment score, and category. Also used for the "chat with article" feature.
+**Claude Sonnet** - Used as a coding assistant throughout implementation. Helped me debug a tricky Supabase connection pooler issue (was using wrong port), figure out Tailwind v4's new syntax, and understand Vercel AI SDK's streaming API. I drove the implementation and wrote the core logic, used Claude to speed up development and troubleshoot.
 
-**text-embedding-3-small (OpenAI)** - Generates the vector embeddings for semantic search.
+**GPT-4o-mini** - Powers the product itself. Generates summaries, sentiment scores, and handles the chat feature.
+
+**text-embedding-3-small** - Generates vector embeddings for semantic search.
 
 ---
 
 ## What I'd Build Next
 
-If I had more time:
+With more time:
 
-- **Better error handling** - Right now if OpenAI rate limits us, the cron job just fails silently. Should add retries and alerting.
-
-- **Source diversity** - Only pulling from HN right now. Would add TechCrunch, Ars Technica, maybe Reddit. Each source would need its own parser.
-
-- **User accounts** - Let people save articles, customize their feed, set up alerts for specific topics.
-
-- **Email digest** - The subscribe form collects emails but doesn't send anything yet. Would set up a daily/weekly digest with Resend or similar.
-
-- **Better mobile experience** - It works on mobile but the chat modal is clunky. Would make it a slide-up sheet instead.
+- **Actually send the email digests** - The subscribe form collects emails but doesn't send anything yet. Would set up daily/weekly sends with Resend.
+- **Source diversity** - Only pulling from HN right now. Would add TechCrunch, Ars Technica, maybe Reddit. Each source needs its own parser.
+- **Better error handling** - If OpenAI rate limits, the cron just fails silently. Should add retries and alerting.
+- **User accounts** - Save articles, customize feed, set up topic alerts.
 
 ---
 

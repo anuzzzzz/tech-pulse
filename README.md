@@ -1,111 +1,106 @@
 # TechPulse
 
-AI-powered tech news aggregator that summarizes the hottest stories from Hacker News.
+A tech news aggregator that pulls top stories from Hacker News and uses AI to generate quick summaries.
 
-## Features
+**Live demo:** https://techpulse-kohl.vercel.app
 
-- **AI Summarization** - GPT-4o-mini generates concise 2-sentence summaries
-- **Sentiment Analysis** - Each article scored 1-10 with visual indicators
-- **Smart Categorization** - Auto-categorized (AI, Security, Web, etc.)
-- **Chat with Articles** - Ask questions about any article
-- **Semantic Search** - Find articles by meaning, not just keywords
-- **Filters** - Filter by category and sentiment
-- **Pagination** - 10 articles per page with navigation
-- **Email Digest** - Subscribe for daily updates
-- **Auto Updates** - Hourly cron job fetches new stories
+---
 
-## Tech Stack
+## Running Locally
 
-| Layer | Technology |
-|-------|------------|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript |
-| Styling | Tailwind CSS v4 |
-| Database | Supabase (PostgreSQL + pgvector) |
-| ORM | Drizzle |
-| AI | OpenAI GPT-4o-mini via Vercel AI SDK |
-| Deployment | Vercel |
-
-## Architecture
-
+```bash
+git clone https://github.com/anuzzzzz/tech-pulse.git
+cd tech-pulse
+npm install
+npm run dev
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Vercel Cron   │────▶│   Hacker News   │────▶│     OpenAI      │
-│   (Hourly)      │     │      API        │     │   GPT-4o-mini   │
-└────────┬────────┘     └─────────────────┘     └────────┬────────┘
-         │                                               │
-         │              ┌─────────────────┐              │
-         └─────────────▶│    Supabase     │◀─────────────┘
-                        │   (PostgreSQL)  │
-                        │   + pgvector    │
-                        └────────┬────────┘
-                                 │
-                        ┌────────▼────────┐
-                        │   Next.js UI    │
-                        │  (Server Comp)  │
-                        └─────────────────┘
-```
+
+Open http://localhost:3000
 
 ## Setup
 
-### 1. Clone & Install
+Create a `.env.local` file:
 
-```bash
-git clone https://github.com/yourusername/techpulse.git
-cd techpulse
-npm install
+```
+DATABASE_URL=your_supabase_connection_string
+OPENAI_API_KEY=your_openai_key
+CRON_SECRET=any_random_string
 ```
 
-### 2. Environment Variables
+You'll need:
+- A Supabase project (free tier works)
+- An OpenAI API key with GPT-4o-mini access
 
-Create `.env.local`:
-
-```env
-DATABASE_URL="your-supabase-pooler-connection-string"
-OPENAI_API_KEY="sk-your-openai-key"
-CRON_SECRET="your-random-secret"
-```
-
-### 3. Database Setup
+Then push the database schema:
 
 ```bash
 npx drizzle-kit push
 ```
 
-### 4. Enable pgvector (in Supabase SQL Editor)
+And enable the vector extension in Supabase SQL editor:
 
 ```sql
-CREATE EXTENSION IF NOT EXISTS vector;
+create extension if not exists vector;
 ```
 
-### 5. Run Locally
+---
 
-```bash
-npm run dev
-```
+## Approach
 
-Open [http://localhost:3000](http://localhost:3000)
+I wanted to build something that feels fast. Instead of calling OpenAI every time someone loads the page (slow, expensive), I fetch and summarize articles in the background. Users always see pre-processed content instantly.
 
-### 6. Test All Features
+The flow:
+1. Cron job hits Hacker News API daily (Vercel's free tier only allows daily crons)
+2. For each new story, GPT-4o-mini generates a 2-sentence summary, sentiment score (1-10), and category
+3. Everything gets stored in Postgres
+4. Frontend just reads from the database - no waiting
 
-```bash
-npx tsx src/lib/test-all-features.ts
-```
-
-## AI Tools Used
-
-- **Claude (Anthropic)** - Architecture design, code generation, debugging
-- **GPT-4o-mini (OpenAI)** - News summarization, sentiment analysis, chat
+I also added semantic search using pgvector. Each article gets an embedding, so you can search by meaning ("articles about AI safety") rather than exact keywords.
 
 ## Tradeoffs
 
-| Decision | Reasoning |
-|----------|-----------|
-| GPT-4o-mini vs GPT-4o | Speed + cost; summaries are still high quality |
-| Server Actions vs API routes | Simpler architecture, fewer files |
-| Supabase vs raw Postgres | Faster setup, built-in pooling + pgvector |
-| Proactive vs Reactive fetching | Better UX - no loading spinners |
+**GPT-4o-mini over GPT-4o** - The summaries are good enough for this use case, and it's way cheaper/faster. For something like legal document analysis I'd use the bigger model.
 
-## License
+**Supabase over self-hosted Postgres** - Faster to set up, has pgvector built in, and the connection pooling just works. Downside is vendor lock-in but that's fine for a project this size.
 
-MIT
+**Server Actions over API routes** - Next.js 15 thing. Less boilerplate, type-safe by default. I only used a traditional API route for the cron endpoint since Vercel cron needs a URL to hit.
+
+**Storing embeddings per-article** - Takes more storage but makes search instant. Alternative would be generating embeddings at query time but that adds latency.
+
+---
+
+## AI Tools Used
+
+**Claude (Anthropic)** - I used Claude throughout development for architecture decisions, debugging database connection issues, and generating boilerplate code. Specifically helped me figure out the Supabase pooler connection string format and Tailwind v4 syntax changes.
+
+**GPT-4o-mini (OpenAI)** - Powers the actual product. Each article gets sent to GPT-4o-mini with a prompt asking for a summary, sentiment score, and category. Also used for the "chat with article" feature.
+
+**text-embedding-3-small (OpenAI)** - Generates the vector embeddings for semantic search.
+
+---
+
+## What I'd Build Next
+
+If I had more time:
+
+- **Better error handling** - Right now if OpenAI rate limits us, the cron job just fails silently. Should add retries and alerting.
+
+- **Source diversity** - Only pulling from HN right now. Would add TechCrunch, Ars Technica, maybe Reddit. Each source would need its own parser.
+
+- **User accounts** - Let people save articles, customize their feed, set up alerts for specific topics.
+
+- **Email digest** - The subscribe form collects emails but doesn't send anything yet. Would set up a daily/weekly digest with Resend or similar.
+
+- **Better mobile experience** - It works on mobile but the chat modal is clunky. Would make it a slide-up sheet instead.
+
+---
+
+## Tech Stack
+
+- Next.js 15 (App Router)
+- TypeScript
+- Tailwind CSS
+- Drizzle ORM
+- Supabase (Postgres + pgvector)
+- Vercel AI SDK
+- OpenAI API

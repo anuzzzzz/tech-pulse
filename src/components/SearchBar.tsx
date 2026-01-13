@@ -28,7 +28,7 @@ export function SearchBar() {
     setShowResults(true);
 
     const searchResults = await semanticSearch(query);
-    setResults(searchResults as SearchResult[]);
+    setResults(searchResults as unknown as SearchResult[]);
     setIsSearching(false);
   };
 
